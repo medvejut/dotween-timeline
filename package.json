@@ -1,0 +1,10 @@
+{
+  "name": "com.medvejut.dotweentimeline",
+  "displayName": "DOTween Timeline",
+  "version": "1.0.5",
+  "description": "Timeline component for DOTween Pro.",
+  "author": {
+    "name": "medvejut",
+    "url": "https://github.com/medvejut"
+  }
+}
