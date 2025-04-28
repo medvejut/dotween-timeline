@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DG.Tweening;
 using JetBrains.Annotations;
 using UnityEngine;
@@ -22,6 +23,7 @@ namespace Dott
         string Label { get; }
         Component Component { get; }
         [CanBeNull] Tween CreateEditorPreview();
+        IEnumerable<Object> Targets { get; }
 
         #endregion
     }

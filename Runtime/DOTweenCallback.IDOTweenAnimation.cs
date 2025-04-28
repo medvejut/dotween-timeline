@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using DG.Tweening;
 using UnityEngine;
 
@@ -19,6 +21,7 @@ namespace Dott
         bool IDOTweenAnimation.CallbackView => true;
         string IDOTweenAnimation.Label => string.IsNullOrEmpty(id) ? "<i>Callback</i>" : id;
         Component IDOTweenAnimation.Component => this;
+        public IEnumerable<Object> Targets => Enumerable.Empty<Object>();
 
         Tween IDOTweenAnimation.CreateEditorPreview() =>
             // Need to return a valid tween for preview playback

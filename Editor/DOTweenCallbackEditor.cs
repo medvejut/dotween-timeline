@@ -1,5 +1,4 @@
 using UnityEditor;
-using UnityEngine;
 
 namespace Dott.Editor
 {
@@ -21,11 +20,6 @@ namespace Dott.Editor
             EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(DOTweenCallback.onCallback)));
 
             serializedObject.ApplyModifiedProperties();
-
-            if (GUI.changed)
-            {
-                EditorUtility.SetDirty(target);
-            }
         }
     }
 }

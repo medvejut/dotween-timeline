@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace Dott.Editor
@@ -24,17 +25,16 @@ namespace Dott.Editor
             return Array.IndexOf(array, value);
         }
 
-        public static int FindIndex<T>(this IList<T> source, Predicate<T> predicate)
+        public static bool IsRightMouseButton(this Event @event)
         {
-            for (var i = 0; i < source.Count; ++i)
+            const int mouseButtonLeft = 0;
+            if (Application.platform == RuntimePlatform.OSXEditor && @event.control && @event.button == mouseButtonLeft)
             {
-                if (predicate(source[i]))
-                {
-                    return i;
-                }
+                return true;
             }
 
-            return -1;
+            const int mouseButtonRight = 1;
+            return @event.button == mouseButtonRight;
         }
     }
 }

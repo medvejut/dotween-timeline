@@ -11,6 +11,7 @@ namespace Dott
         [SerializeField] private FrameProperty[] properties = new FrameProperty[1];
 
         private Sequence tween;
+        public FrameProperty[] Properties => properties;
 
         public Tween CreateTween(bool regenerateIfExists, bool andPlay = true)
         {

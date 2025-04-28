@@ -25,7 +25,7 @@ namespace Dott.Editor
             selection.Validate(animations);
 
             view.DrawTimeline(animations, selection.Animation, controller.IsPlaying, controller.ElapsedTime,
-                controller.Loop, controller.FreezeFrame, controller.Paused);
+                controller.Loop, controller.Paused);
 
             if (selection.Animation != null)
             {
@@ -35,6 +35,12 @@ namespace Dott.Editor
             if (controller.Paused && Event.current.type == EventType.Repaint)
             {
                 controller.GoTo(animations, controller.ElapsedTime);
+            }
+
+            // Smoother ui updates
+            if (controller.IsPlaying || view.IsTimeDragging || view.IsTweenDragging)
+            {
+                Repaint();
             }
         }
 
@@ -49,6 +55,7 @@ namespace Dott.Editor
 
             view.TimeDragEnd += OnTimeDragEnd;
             view.TimeDrag += GoTo;
+            view.PreviewDisabled += controller.Stop;
 
             view.AddClicked += AddAnimation;
             view.AddMore += AddMore;
@@ -58,7 +65,8 @@ namespace Dott.Editor
             view.PlayClicked += Play;
             view.StopClicked += controller.Stop;
             view.LoopToggled += ToggleLoop;
-            view.FreezeFrameClicked += ToggleFreeze;
+
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         private void OnDisable()
@@ -68,6 +76,7 @@ namespace Dott.Editor
 
             view.TimeDragEnd -= OnTimeDragEnd;
             view.TimeDrag -= GoTo;
+            view.PreviewDisabled -= controller.Stop;
 
             view.AddClicked -= AddAnimation;
             view.AddMore -= AddMore;
@@ -77,7 +86,8 @@ namespace Dott.Editor
             view.PlayClicked -= Play;
             view.StopClicked -= controller.Stop;
             view.LoopToggled -= ToggleLoop;
-            view.FreezeFrameClicked -= ToggleFreeze;
+
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
             controller.Dispose();
             controller = null;
@@ -100,26 +110,32 @@ namespace Dott.Editor
             controller.GoTo(animations, time);
         }
 
-        private void OnTimeDragEnd()
+        private void OnTimeDragEnd(Event mouseEvent)
         {
-            if (controller.FreezeFrame)
-            {
-                controller.Pause();
-            }
-            else
+            const int mouseButtonMiddle = 2;
+            if (mouseEvent.IsRightMouseButton() || mouseEvent.button == mouseButtonMiddle)
             {
                 controller.Stop();
+                return;
             }
+
+            controller.Pause();
         }
 
         private void DragSelectedAnimation(float time)
         {
+            // Sometimes (e.g., for Frame) undo is not recorded when dragging, so we force it
+            Undo.RecordObject(selection.Animation.Component, $"Drag {selection.Animation.Label}");
+
             dragTweenTimeShift ??= time - selection.Animation.Delay;
 
             var delay = time - dragTweenTimeShift.Value;
             delay = Mathf.Max(0, delay);
             delay = (float)Math.Round(delay, 2);
             selection.Animation.Delay = delay;
+
+            // Complete undo record
+            Undo.FlushUndoRecordObjects();
         }
 
         private void OnTweenSelected(IDOTweenAnimation animation)
@@ -145,6 +161,11 @@ namespace Dott.Editor
         {
             var component = ObjectFactory.AddComponent(timeline.gameObject, type);
             var animation = DottAnimation.FromComponent(component);
+            if (controller.Paused)
+            {
+                animation!.Delay = (float)Math.Round(controller.ElapsedTime, 2);
+            }
+
             selection.Set(animation);
         }
 
@@ -181,11 +202,10 @@ namespace Dott.Editor
             controller.Loop = value;
         }
 
-        private void ToggleFreeze(bool value)
+        private void OnPlayModeStateChanged(PlayModeStateChange stateChange)
         {
-            controller.FreezeFrame = value;
-
-            if (!value)
+            // Rewind tweens before play mode. OnDisable is too late (runs after dirty state is saved)
+            if (stateChange == PlayModeStateChange.ExitingEditMode)
             {
                 controller.Stop();
             }

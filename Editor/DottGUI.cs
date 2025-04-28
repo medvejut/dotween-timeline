@@ -15,7 +15,6 @@ namespace Dott.Editor
         private const int HEADER_HEIGHT = 28;
         private static readonly Vector2 PlayButtonSize = new(44, 24);
         private static readonly Vector2 LoopToggleSize = new(24, 24);
-        private static readonly Vector2 FreezeToggleSize = new(24, 24);
         private static readonly Color PlayheadColor = new(0.19f, 0.44f, 0.89f);
 
         private static readonly Color[] Colors =
@@ -35,7 +34,7 @@ namespace Dott.Editor
             RoundRect(rect, Color.black, borderRadius: 4, borderWidth: 1);
         }
 
-        public static void Header(Rect rect)
+        public static Rect Header(Rect rect)
         {
             rect = rect.SetHeight(HEADER_HEIGHT);
 
@@ -45,9 +44,43 @@ namespace Dott.Editor
 
             var bottomLine = new Rect(rect.x, rect.y + rect.height, rect.width, 1);
             EditorGUI.DrawRect(bottomLine, Color.black);
+
+            return rect;
         }
 
-        public static Rect Time(Rect rect, float timeScale, ref bool isDragging, Action start, Action end)
+        public static bool PreviewEye(Rect headerRect, bool isPlaying, bool isPaused, bool isTimeDragging)
+        {
+            if (!isPlaying && !isPaused && !isTimeDragging) { return false; }
+
+            var iconSize = Vector2.one * 16f;
+            var eyeShift = new Vector2(31f, -0f);
+            var iconRect = new Rect(headerRect.x + headerRect.width * 0.5f + eyeShift.x, headerRect.y + (headerRect.height - iconSize.y) / 2 + eyeShift.y, iconSize.x, iconSize.y);
+
+            var clickArea = isPlaying ? iconRect : headerRect.Expand(-48f, 0);
+            var hover = !isTimeDragging && clickArea.Contains(Event.current.mousePosition);
+
+            var eyeIcon = EditorGUIUtility.TrIconContent(hover ? "animationvisibilitytoggleoff" : "animationvisibilitytoggleon",
+                "Disable scene preview mode.");
+
+            using (new DeGUI.ColorScope(background: Color.white.SetAlpha(0f), main: Color.white.SetAlpha(0.3f)))
+            {
+                EditorGUIUtility.AddCursorRect(iconRect, MouseCursor.Link);
+                if (GUI.Button(iconRect, eyeIcon, EditorStyles.iconButton))
+                {
+                    return true;
+                }
+            }
+
+            if (Event.current.type == EventType.MouseDown && clickArea.Contains(Event.current.mousePosition))
+            {
+                Event.current.Use();
+                return true;
+            }
+
+            return false;
+        }
+
+        public static Rect Time(Rect rect, float timeScale, ref bool isDragging, Action start, Action<Event> end)
         {
             rect = rect.ShiftY(HEADER_HEIGHT).SetHeight(TIME_HEIGHT);
 
@@ -75,7 +108,7 @@ namespace Dott.Editor
             return rect;
         }
 
-        private static void ProcessDragEvents(Rect rect, ref bool isDragging, Action start, Action end)
+        private static void ProcessDragEvents(Rect rect, ref bool isDragging, Action start, Action<Event> end)
         {
             var current = Event.current;
             switch (current.type)
@@ -88,7 +121,7 @@ namespace Dott.Editor
 
                 case EventType.MouseUp when isDragging:
                     isDragging = false;
-                    end?.Invoke();
+                    end?.Invoke(current);
                     current.Use();
                     break;
             }
@@ -421,17 +454,9 @@ namespace Dott.Editor
         {
             var position = rect.position + new Vector2(rect.width - LoopToggleSize.x - 2, (HEADER_HEIGHT - LoopToggleSize.y) / 2);
             var toggleRect = new Rect(position, LoopToggleSize);
-            var iconContent = EditorGUIUtility.IconContent("preAudioLoopOff");
+            var iconContent = EditorGUIUtility.TrIconContent("preAudioLoopOff", "Toggle loop playback");
             var style = new GUIStyle(GUI.skin.button) { padding = new RectOffset(0, 0, 0, 0) };
             return GUI.Toggle(toggleRect, value, iconContent, style);
-        }
-
-        public static bool FreezeFrameToggle(Rect rect, bool value)
-        {
-            var position = rect.position + new Vector2(rect.width - LoopToggleSize.x - 2 - FreezeToggleSize.x - 2, (HEADER_HEIGHT - FreezeToggleSize.y) / 2);
-            var toggleRect = new Rect(position, FreezeToggleSize);
-            var style = new GUIStyle(GUI.skin.button) { padding = new RectOffset(0, 0, 0, 0) };
-            return GUI.Toggle(toggleRect, value, IconFreezeFrame, style);
         }
 
         private static void RoundRect(Rect rect, Color color, float borderRadius, float borderWidth = 0)
@@ -442,11 +467,7 @@ namespace Dott.Editor
 
         #region Icons
 
-        private static Texture2D IconFreezeFrame => DottUtils.ImageFromString(ICON_FREEZE_FRAME);
         private static Texture2D IconCallback => DottUtils.ImageFromString(ICON_CALLBACK);
-
-        private const string ICON_FREEZE_FRAME =
-            "iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAN4SURBVHgB7ZhfSFNRGMDP1nK2zSZG6oyLIwV98KWsXmVQDz5YVG9RT0JMfZHAx8rSXhT7Y4gP4YtMyr3NxCRBmyyKCRpEJoqK0Jjur2PDzdx2+z679z7Y3eTOq012fvBxv51zvnP/nO9833dGCIVCoVAoFEruoiASYVm2AC43QDQphnxTKBTOFLYX4HI5hd0WiA1sw+QwgYe4y6anI43ts31s7xGJqIh0+C//HsQu0v85je0HkIBIex1IA8gpIpFMXoDnEyz3cykGMN4BF8fedvjyeGkgGaAkxxz6Av+bnHwBjPFPQL4Q+XBwc84SCiW3UKXQsx7hYWdmZnrtdvsrsT5JEx0RJ0ASIPGFhYWncA3Mzc1FVCoV63a7m/x+f1lNTc1DbixGyCSRG6hbLoE8BrkiwUwo25eXl2+1t7cre3p6GCw/Y7GYe2dnx4V6X18fg2O8Xm+DmK0swH3uc6XvAwlmytbWViMq29vb0dHRURPqXV1dpTBPAqWtra0U28bGxuoSicRudWc2m9FG3mSb4QugXWhzc/O7y+X6uLS0ZOHbp6am+qenp/v536urq0Pr6+sTkUjkB9j495v3qEqJfCil9TqdzmkwGK5VVlbeBHfRYQf4fxE8aBHqg4ODWqPReLukpORqXl7eLNicgWY1kZMDrEAAjYLB4ARs2GHUw+Fw88jISK/NZnsdCASasA1W6B3sgUnuHvIfLzPdA1ar9Vx9fb3wNQcGBs6Dm8xycyXhZX46HI4yvr+2tvbk+Pi4gezjJQcJoya4sViE+ApL/8+xUq1WswzDCGGxqqoqxt0fNyzO83ttbS2f7y8uLlZubGwoySFEoYwO9egO2OnxeCbBTd6i7vP5mtF9UEKhUDPnQsOQDya4uYJEbmDSAvz3gHMlMbkoYrb7ZePx+BvuwWLgUrubGLLwMEQhK+rd3d1a6NtKJpMsjOUjVdpNLO/ypAEezAs+7wNf/xWNRr0VFRV3sB1DKMR9hclkMuNvCLFDGo3mrFarNej1+nJwx9MkC1A2NjaWo4JJCpMV6pi8+ESGSQ3bMMlBssP9QbjklxWnRmGl+TIBywb0JSwjQNyod3Z2MlhmrKysXBezTTvxESEUaPPz8x2FhYUui8XCtLS0KJxOpweSXFF1dfWjvWOzESF8wyZ+sbi4+FKs7zhwbA80FAqF8pc/YIJhbIXLtTcAAAAASUVORK5CYII=";
 
         private const string ICON_CALLBACK =
             "iVBORw0KGgoAAAANSUhEUgAAABQAAAAoCAYAAAD+MdrbAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAD4SURBVHgB7ZWxCoJQFIaPkkuOQVtDLQ02tPQGDrn6CvU+tbeH4NTmCzgLRWM0NGhBuCiBBXZO3eISFXppMLgf/ChX7ufPWQ6ApHIo3HsX08ZoUI4zZodZ84c9x3GmWZYleUmSJNnTXVboiUUfckGoCDqGJFKZsKbrehME0TRNBzYqFX6MFEqhFErhnwsvcRxvQZA0TQ/4OPFnHdu2RyJrAIts8O4YXnYK0cKYvu/Pi4hoj3ieN8M7Fty35VvqmD61jaJo+UkWhuGKtRpAwbV7a+u67oQfA9fKxDSgJPRng9oGQbCgsFYGfGmlFBDTGB4zijBHkEgqzhX38zVoGGkfagAAAABJRU5ErkJggg==";

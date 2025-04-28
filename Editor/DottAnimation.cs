@@ -1,6 +1,9 @@
+using System.Collections.Generic;
+using System.Linq;
 using DG.Tweening;
 using JetBrains.Annotations;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Dott.Editor
 {
@@ -61,6 +64,7 @@ namespace Dott.Editor
             }
 
             public Component Component => animation;
+            public IEnumerable<Object> Targets => animation.target != null ? new[] { animation.target } : Enumerable.Empty<Object>();
             public Tween CreateEditorPreview() => animation.CreateEditorPreview();
 
             public AnimationAdapter(DOTweenAnimation animation)

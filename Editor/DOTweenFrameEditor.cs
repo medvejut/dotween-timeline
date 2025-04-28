@@ -30,8 +30,10 @@ namespace Dott.Editor
             if (GUILayout.Button("Add"))
             {
                 properties.arraySize++;
-                var property = properties.GetArrayElementAtIndex(properties.arraySize - 1);
-                property.boxedValue = new DOTweenFrame.FrameProperty();
+
+                // Unity duplicates the last element when increasing arraySize, so reset the new one manually
+                serializedObject.ApplyModifiedProperties();
+                ((DOTweenFrame)target).Properties[properties.arraySize - 1] = new DOTweenFrame.FrameProperty();
             }
 
             serializedObject.ApplyModifiedProperties();

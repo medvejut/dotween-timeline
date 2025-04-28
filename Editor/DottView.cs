@@ -13,7 +13,10 @@ namespace Dott.Editor
         private bool isTweenDragging;
         private static readonly AddMoreItem[] AddMoreItems = CreateAddMoreItems();
 
-        public event Action TimeDragEnd;
+        public bool IsTimeDragging => isTimeDragging;
+        public bool IsTweenDragging => isTweenDragging;
+
+        public event Action<Event> TimeDragEnd;
         public event Action<float> TimeDrag;
         public event Action<IDOTweenAnimation> TweenSelected;
         public event Action<float> TweenDrag;
@@ -24,14 +27,14 @@ namespace Dott.Editor
         public event Action StopClicked;
         public event Action PlayClicked;
         public event Action<bool> LoopToggled;
-        public event Action<bool> FreezeFrameClicked;
+        public event Action PreviewDisabled;
 
-        public void DrawTimeline(IDOTweenAnimation[] animations, [CanBeNull] IDOTweenAnimation selected, bool isPlaying, float currentPlayingTime, bool isLooping, bool isFreezeFrame, bool isPaused)
+        public void DrawTimeline(IDOTweenAnimation[] animations, [CanBeNull] IDOTweenAnimation selected, bool isPlaying, float currentPlayingTime, bool isLooping, bool isPaused)
         {
             var rect = DottGUI.GetTimelineControlRect(animations.Length);
 
             DottGUI.Background(rect);
-            DottGUI.Header(rect);
+            var headerRect = DottGUI.Header(rect);
 
             var timeScale = CalculateTimeScale(animations);
             var timeDragStarted = false;
@@ -106,18 +109,17 @@ namespace Dott.Editor
                 LoopToggled?.Invoke(loopResult);
             }
 
-            var freezeFrameResult = DottGUI.FreezeFrameToggle(rect, isFreezeFrame);
-            if (freezeFrameResult != isFreezeFrame)
+            if (DottGUI.PreviewEye(headerRect, isPlaying, isPaused, isTimeDragging))
             {
-                FreezeFrameClicked?.Invoke(freezeFrameResult);
+                PreviewDisabled?.Invoke();
             }
 
-            if (selected != null && Event.current.type == EventType.MouseDown)
+            if (Event.current.type == EventType.MouseDown)
             {
-                if (rect.Contains(Event.current.mousePosition))
+                var mousePosition = Event.current.mousePosition;
+                if (selected != null && rect.Contains(mousePosition))
                 {
                     TweenSelected?.Invoke(null);
-                    Event.current.Use();
                 }
             }
         }
