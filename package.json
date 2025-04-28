@@ -1,7 +1,7 @@
 {
   "name": "com.medvejut.dotweentimeline",
   "displayName": "DOTween Timeline",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Timeline component for DOTween Pro.",
   "author": {
     "name": "medvejut",
