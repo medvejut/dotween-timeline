@@ -94,8 +94,8 @@ namespace Dott.Editor
 
         public void Dispose()
         {
-            drivenProperties.Dispose();
             Stop();
+            drivenProperties.Dispose();
             DottEditorPreview.Completed -= DottEditorPreviewOnCompleted;
         }
     }

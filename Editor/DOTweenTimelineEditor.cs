@@ -21,6 +21,8 @@ namespace Dott.Editor
 
         public override void OnInspectorGUI()
         {
+            Timeline.OnValidate();
+
             animations = Timeline.GetComponents<MonoBehaviour>().Select(DottAnimation.FromComponent).Where(animation => animation != null).ToArray();
             selection.Validate(animations);
 

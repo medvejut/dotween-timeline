@@ -57,7 +57,7 @@ namespace Dott
             Sequence?.Kill();
         }
 
-        private void OnValidate()
+        public void OnValidate()
         {
             foreach (var doTweenAnimation in GetComponents<DOTweenAnimation>())
             {
