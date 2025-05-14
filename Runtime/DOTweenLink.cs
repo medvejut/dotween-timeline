@@ -99,7 +99,8 @@ namespace Dott
 
             private float Duration => child?.Duration ?? doChild.duration;
             private int Loops => child?.Loops ?? doChild.loops;
-            public float FullDuration => Duration * Mathf.Max(1, Loops);
+            private float Delay => child?.Delay ?? doChild.delay;
+            public float FullDuration => Delay + Duration * Mathf.Max(1, Loops);
 
             public Tween CreateEditorPreview()
             {
