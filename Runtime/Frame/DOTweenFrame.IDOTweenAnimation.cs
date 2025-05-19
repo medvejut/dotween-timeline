@@ -26,7 +26,16 @@ namespace Dott
         Texture2D IDOTweenAnimation.CustomIcon => DottUtils.ImageFromString(ICON_FRAME);
         string IDOTweenAnimation.Label => string.IsNullOrEmpty(id) ? "<i>Frame</i>" : id;
         Component IDOTweenAnimation.Component => this;
-        public IEnumerable<Object> Targets => properties.Select(property => property.Target);
+
+        public IEnumerable<Object> Targets => properties.Select(property =>
+        {
+            if (property.Property == FrameProperty.PropertyType.Active)
+            {
+                return (Object)property.TargetGameObject;
+            }
+
+            return property.Target;
+        });
 
         Tween IDOTweenAnimation.CreateEditorPreview() => CreateTween(regenerateIfExists: true);
     }
