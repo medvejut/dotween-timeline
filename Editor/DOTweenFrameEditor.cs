@@ -110,7 +110,8 @@ namespace Dott.Editor
             }
 
             Component component;
-            if (components.Length == 1)
+            var showPopupForSingleComponent = propertyType == DOTweenFrame.FrameProperty.PropertyType.Enabled;
+            if (components.Length == 1 && !showPopupForSingleComponent)
             {
                 targetProperty.objectReferenceValue = component = components[0];
                 return component;
@@ -166,6 +167,7 @@ namespace Dott.Editor
                     break;
 
                 case DOTweenFrame.FrameProperty.PropertyType.Active:
+                case DOTweenFrame.FrameProperty.PropertyType.Enabled:
                     EditorGUILayout.PropertyField(current.OptionalBoolProp, new GUIContent("Active"));
                     break;
 
@@ -195,6 +197,7 @@ namespace Dott.Editor
                 case DOTweenFrame.FrameProperty.PropertyType.Fade:
                 case DOTweenFrame.FrameProperty.PropertyType.Color:
                 case DOTweenFrame.FrameProperty.PropertyType.Active:
+                case DOTweenFrame.FrameProperty.PropertyType.Enabled:
                     break;
 
                 default:
@@ -266,6 +269,9 @@ namespace Dott.Editor
                     var camera = targetGameObject.GetComponent<Camera>();
                     return new Component[] { graphic, camera }.Where(c => c != null).ToArray();
                 }
+
+                case DOTweenFrame.FrameProperty.PropertyType.Enabled:
+                    return targetGameObject.GetComponents<Behaviour>().Cast<Component>().ToArray();
 
                 case DOTweenFrame.FrameProperty.PropertyType.None:
                 default:
