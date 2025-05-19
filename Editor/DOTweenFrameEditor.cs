@@ -165,6 +165,10 @@ namespace Dott.Editor
                     EditorGUILayout.PropertyField(colorProperty, new GUIContent("Color"));
                     break;
 
+                case DOTweenFrame.FrameProperty.PropertyType.Active:
+                    EditorGUILayout.PropertyField(current.OptionalBoolProp, new GUIContent("Active"));
+                    break;
+
                 case DOTweenFrame.FrameProperty.PropertyType.None:
                     break;
 
@@ -190,6 +194,7 @@ namespace Dott.Editor
                 case DOTweenFrame.FrameProperty.PropertyType.None:
                 case DOTweenFrame.FrameProperty.PropertyType.Fade:
                 case DOTweenFrame.FrameProperty.PropertyType.Color:
+                case DOTweenFrame.FrameProperty.PropertyType.Active:
                     break;
 
                 default:
@@ -245,6 +250,7 @@ namespace Dott.Editor
                 case DOTweenFrame.FrameProperty.PropertyType.Position:
                 case DOTweenFrame.FrameProperty.PropertyType.LocalPosition:
                 case DOTweenFrame.FrameProperty.PropertyType.Scale:
+                case DOTweenFrame.FrameProperty.PropertyType.Active:
                     return new Component[] { targetGameObject.GetComponent<Transform>() };
 
                 case DOTweenFrame.FrameProperty.PropertyType.Fade:
