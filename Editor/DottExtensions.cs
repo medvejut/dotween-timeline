@@ -15,14 +15,27 @@ namespace Dott.Editor
             }
         }
 
-        public static T GetRandom<T>(this T[] collection)
+        public static T GetRandom<T>(this IList<T> collection)
         {
-            return collection[Random.Range(0, collection.Length)];
+            return collection[Random.Range(0, collection.Count)];
         }
 
-        public static int IndexOf<T>(this T[] array, T value)
+        public static int IndexOf<T>(this IList<T> array, T value)
         {
-            return Array.IndexOf(array, value);
+            return array.IndexOf(value);
+        }
+
+        public static int FindIndex<T>(this IList<T> array, Func<T, bool> predicate)
+        {
+            for (var i = 0; i < array.Count; i++)
+            {
+                if (predicate(array[i]))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
 
         public static bool IsRightMouseButton(this Event @event)

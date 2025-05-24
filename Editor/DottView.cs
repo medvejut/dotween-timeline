@@ -31,6 +31,8 @@ namespace Dott.Editor
         public event Action<bool> LoopToggled;
         public event Action SnapToggled;
         public event Action PreviewDisabled;
+        public event Action InspectorUpButtonClicked;
+        public event Action InspectorDownButtonClicked;
 
         public void DrawTimeline(IDOTweenAnimation[] animations, [CanBeNull] IDOTweenAnimation selected, bool isPlaying, float currentPlayingTime, bool isLooping, bool isPaused)
         {
@@ -137,7 +139,7 @@ namespace Dott.Editor
 
         public void DrawInspector(UnityEditor.Editor editor)
         {
-            DottGUI.Inspector(editor);
+            DottGUI.Inspector(editor, InspectorUpButtonClicked, InspectorDownButtonClicked);
         }
 
         private static float CalculateTimeScale(IDOTweenAnimation[] animations)
