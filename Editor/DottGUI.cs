@@ -335,7 +335,7 @@ namespace Dott.Editor
             EditorGUI.DrawRect(verticalLine, PlayheadColor);
         }
 
-        public static void Inspector(UnityEditor.Editor editor)
+        public static void Inspector(UnityEditor.Editor editor, Action onButtonUp, Action onButtonDown)
         {
             var headerStyle = new GUIStyle(EditorStyles.boldLabel)
             {
@@ -346,15 +346,34 @@ namespace Dott.Editor
 
             Splitter(new Color(0.12f, 0.12f, 0.12f, 1.333f));
 
-            var backgroundRect = GUILayoutUtility.GetRect(1f, EditorGUIUtility.singleLineHeight);
+            var backgroundRect = GUILayoutUtility.GetRect(1f, 20f);
             var labelRect = backgroundRect;
             backgroundRect = ToFullWidth(backgroundRect);
             EditorGUI.DrawRect(backgroundRect, new Color(0.1f, 0.1f, 0.1f, 0.2f));
             EditorGUI.LabelField(labelRect, "Inspector", headerStyle);
 
+            CreateInspectorButtons(backgroundRect, onButtonUp, onButtonDown);
+
             Splitter(new Color(0.19f, 0.19f, 0.19f, 1.333f));
 
             editor.OnInspectorGUI();
+        }
+
+        private static void CreateInspectorButtons(Rect backgroundRect, Action onButtonUp, Action onButtonDown)
+        {
+            const int rightMargin = 6;
+            var downButtonRect = new Rect(backgroundRect.xMax - InspectorButtonSize.x - rightMargin, backgroundRect.y, InspectorButtonSize.x, InspectorButtonSize.y);
+            var upButtonRect = downButtonRect.ShiftX(-InspectorButtonSize.x);
+
+            if (GUI.Button(upButtonRect, InspectorUpButton, InspectorButtonStyle))
+            {
+                onButtonUp?.Invoke();
+            }
+
+            if (GUI.Button(downButtonRect, InspectorDownButton, InspectorButtonStyle))
+            {
+                onButtonDown?.Invoke();
+            }
         }
 
         private static void Splitter(Color color)
@@ -483,6 +502,20 @@ namespace Dott.Editor
 
         private const string ICON_CALLBACK =
             "iVBORw0KGgoAAAANSUhEUgAAABQAAAAoCAYAAAD+MdrbAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAD4SURBVHgB7ZWxCoJQFIaPkkuOQVtDLQ02tPQGDrn6CvU+tbeH4NTmCzgLRWM0NGhBuCiBBXZO3eISFXppMLgf/ChX7ufPWQ6ApHIo3HsX08ZoUI4zZodZ84c9x3GmWZYleUmSJNnTXVboiUUfckGoCDqGJFKZsKbrehME0TRNBzYqFX6MFEqhFErhnwsvcRxvQZA0TQ/4OPFnHdu2RyJrAIts8O4YXnYK0cKYvu/Pi4hoj3ieN8M7Fty35VvqmD61jaJo+UkWhuGKtRpAwbV7a+u67oQfA9fKxDSgJPRng9oGQbCgsFYGfGmlFBDTGB4zijBHkEgqzhX38zVoGGkfagAAAABJRU5ErkJggg==";
+
+        #endregion
+
+        #region Styles
+
+        private static readonly Vector2 InspectorButtonSize = new(24f, 20f);
+        private static readonly GUIContent InspectorDownButton = EditorGUIUtility.TrTextContent("↓", "Move Down");
+        private static readonly GUIContent InspectorUpButton = EditorGUIUtility.TrTextContent("↑", "Move Up");
+        private static readonly GUIStyle InspectorButtonStyle = new(EditorStyles.iconButton)
+        {
+            alignment = TextAnchor.MiddleCenter,
+            normal = { textColor = new Color(0.6f, 0.6f, 0.6f) },
+            fixedWidth = 0, fixedHeight = 0
+        };
 
         #endregion
     }

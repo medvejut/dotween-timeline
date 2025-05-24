@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using DG.Tweening;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Dott.Editor
@@ -71,6 +72,9 @@ namespace Dott.Editor
             view.LoopToggled += ToggleLoop;
             view.SnapToggled += ToggleSnap;
 
+            view.InspectorUpButtonClicked += MoveSelectedUp;
+            view.InspectorDownButtonClicked += MoveSelectedDown;
+
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
@@ -92,6 +96,9 @@ namespace Dott.Editor
             view.StopClicked -= controller.Stop;
             view.LoopToggled -= ToggleLoop;
             view.SnapToggled -= ToggleSnap;
+
+            view.InspectorUpButtonClicked -= MoveSelectedUp;
+            view.InspectorDownButtonClicked -= MoveSelectedDown;
 
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
@@ -241,7 +248,7 @@ namespace Dott.Editor
             var index = Array.IndexOf(components, dest);
             while (index > targetIndex)
             {
-                UnityEditorInternal.ComponentUtility.MoveComponentUp(dest);
+                ComponentUtility.MoveComponentUp(dest);
                 index--;
             }
         }
@@ -254,6 +261,24 @@ namespace Dott.Editor
         private void ToggleSnap()
         {
             EditorPrefs.SetBool("Dott.Snap", view.IsSnapping);
+        }
+
+        private void MoveSelectedUp()
+        {
+            var index = animations.FindIndex(animation => animation.Component == selection.Animation.Component);
+            if (index > 0)
+            {
+                ComponentUtility.MoveComponentUp(selection.Animation.Component);
+            }
+        }
+
+        private void MoveSelectedDown()
+        {
+            var index = animations.FindIndex(animation => animation.Component == selection.Animation.Component);
+            if (index < animations.Length - 1)
+            {
+                ComponentUtility.MoveComponentDown(selection.Animation.Component);
+            }
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange stateChange)
