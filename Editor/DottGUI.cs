@@ -15,6 +15,7 @@ namespace Dott.Editor
         private const int HEADER_HEIGHT = 28;
         private static readonly Vector2 PlayButtonSize = new(44, 24);
         private static readonly Vector2 LoopToggleSize = new(24, 24);
+        private static readonly Color ToggleFadeColor = new(1f, 1f, 1f, 0.7f);
         private static readonly Color PlayheadColor = new(0.19f, 0.44f, 0.89f);
 
         private static readonly Color[] Colors =
@@ -456,6 +457,17 @@ namespace Dott.Editor
             var toggleRect = new Rect(position, LoopToggleSize);
             var iconContent = EditorGUIUtility.TrIconContent("preAudioLoopOff", "Toggle loop playback");
             var style = new GUIStyle(GUI.skin.button) { padding = new RectOffset(0, 0, 0, 0) };
+            using var colorScope = new DeGUI.ColorScope(ToggleFadeColor, ToggleFadeColor);
+            return GUI.Toggle(toggleRect, value, iconContent, style);
+        }
+
+        public static bool SnapToggle(Rect rect, bool value)
+        {
+            var position = rect.position + new Vector2(rect.width - (LoopToggleSize.x + 1) * 2 - 2, (HEADER_HEIGHT - LoopToggleSize.y) / 2);
+            var toggleRect = new Rect(position, LoopToggleSize);
+            var iconContent = EditorGUIUtility.TrIconContent("SceneViewSnap", $"Toggle snapping while dragging tweens\n\nHold <b>Ctrl</b> to temporarily {(value ? "disable" : "enable")} snapping.");
+            var style = new GUIStyle(GUI.skin.button) { padding = new RectOffset(0, 0, 0, 0) };
+            using var colorScope = new DeGUI.ColorScope(ToggleFadeColor, ToggleFadeColor);
             return GUI.Toggle(toggleRect, value, iconContent, style);
         }
 
