@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DG.Tweening;
+using JetBrains.Annotations;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -14,7 +15,10 @@ namespace Dott
 
         Tween IDOTweenAnimation.CreateTween(bool regenerateIfExists, bool andPlay)
         {
-            return timeline && timeline.isActiveAndEnabled ? timeline.Play().SetDelay(delay, asPrependedIntervalIfSequence: true) : null;
+            if (!timeline || !timeline.isActiveAndEnabled)
+                return null;
+
+            return timeline.Play().SetDelay(delay, asPrependedIntervalIfSequence: true);
         }
 
         Tween IDOTweenAnimation.CreateEditorPreview()
@@ -68,56 +72,55 @@ namespace Dott
         IEnumerable<Object> IDOTweenAnimation.Targets =>
             timeline ? Children(timeline).SelectMany(child => child.Targets) : Enumerable.Empty<Object>();
 
-        private static IEnumerable<Child> Children(DOTweenTimeline timeline)
+        private static IEnumerable<IChild> Children(DOTweenTimeline timeline)
         {
             var components = timeline.GetComponents<MonoBehaviour>();
             foreach (var component in components)
             {
-                switch (component)
+                IChild child = component switch
                 {
-                    case DOTweenAnimation doChild:
-                        yield return new Child(null, doChild);
-                        break;
+                    IDOTweenAnimation doChild => new Child(doChild),
+                    DOTweenAnimation doChild => new DOChild(doChild),
+                    _ => null
+                };
 
-                    case IDOTweenAnimation child:
-                        yield return new Child(child, null);
-                        break;
+                if (child != null)
+                {
+                    yield return child;
                 }
             }
         }
 
-        private readonly struct Child
+        private interface IChild
+        {
+            float Duration { get; }
+            int Loops { get; }
+            float Delay { get; }
+            float FullDuration => Delay + Duration * Mathf.Max(1, Loops);
+            [CanBeNull] Tween CreateEditorPreview();
+            IEnumerable<Object> Targets { get; }
+        }
+
+        private readonly struct Child : IChild
         {
             private readonly IDOTweenAnimation child;
+            public Child(IDOTweenAnimation child) => this.child = child;
+            public float Duration => child.Duration;
+            public int Loops => child.Loops;
+            public float Delay => child.Delay;
+            public Tween CreateEditorPreview() => child.CreateEditorPreview();
+            public IEnumerable<Object> Targets => child.Targets;
+        }
+
+        private readonly struct DOChild : IChild
+        {
             private readonly DOTweenAnimation doChild;
-
-            public Child(IDOTweenAnimation child, DOTweenAnimation doChild)
-            {
-                this.child = child;
-                this.doChild = doChild;
-            }
-
-            private float Duration => child?.Duration ?? doChild.duration;
-            private int Loops => child?.Loops ?? doChild.loops;
-            private float Delay => child?.Delay ?? doChild.delay;
-            public float FullDuration => Delay + Duration * Mathf.Max(1, Loops);
-
-            public Tween CreateEditorPreview()
-            {
-                if (child != null)
-                {
-                    return child.CreateEditorPreview();
-                }
-
-                if (doChild != null)
-                {
-                    return doChild.CreateEditorPreview();
-                }
-
-                return null;
-            }
-
-            public IEnumerable<Object> Targets => child?.Targets ?? new[] { doChild.target };
+            public DOChild(DOTweenAnimation doChild) => this.doChild = doChild;
+            public float Duration => doChild.duration;
+            public int Loops => doChild.loops;
+            public float Delay => doChild.delay;
+            public Tween CreateEditorPreview() => doChild.CreateEditorPreview();
+            public IEnumerable<Object> Targets => new[] { doChild.target };
         }
     }
 }

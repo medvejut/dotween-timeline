@@ -23,7 +23,7 @@ namespace Dott
         string Label { get; }
         Component Component { get; }
         [CanBeNull] Tween CreateEditorPreview();
-        IEnumerable<Object> Targets { get; }
+        [ItemCanBeNull] IEnumerable<Object> Targets { get; }
 
         #endregion
     }
