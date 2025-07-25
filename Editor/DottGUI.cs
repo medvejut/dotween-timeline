@@ -272,6 +272,7 @@ namespace Dott.Editor
             var width = isInfinite
                 ? rowRect.width - start + rowRect.x
                 : animation.Duration * loops * timeScale * rowRect.width;
+            width = Mathf.Max(width, MIN_TWEEN_RECT_WIDTH);
 
             var tweenRect = new Rect(start, rowRect.y, width, rowRect.height).Expand(-1);
             var alphaMultiplier = animation.IsActive ? 1f : 0.4f;
@@ -515,6 +516,8 @@ namespace Dott.Editor
 
         private static readonly GUIStyle AddTweenButtonStyle = new(EditorStyles.miniButtonLeft) { fixedHeight = 0 };
         private static readonly GUIStyle AddMoreButtonStyle = new(EditorStyles.miniButtonRight) { fixedHeight = 0 };
+
+        private const float MIN_TWEEN_RECT_WIDTH = 16f;
 
         #endregion
     }

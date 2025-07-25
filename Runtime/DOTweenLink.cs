@@ -26,7 +26,7 @@ namespace Dott
             var sequence = DOTween.Sequence();
             foreach (var child in Children(timeline))
             {
-                if (child.CreateEditorPreview() is { } tween)
+                if (child.IsActiveAndValid && child.CreateEditorPreview() is { } tween)
                 {
                     sequence.Insert(0, tween);
                 }
@@ -42,12 +42,13 @@ namespace Dott
             set => delay = value;
         }
 
-        float IDOTweenAnimation.Duration =>
-            timeline ? Children(timeline).Select(child => child.FullDuration).Max() : 1;
+        float IDOTweenAnimation.Duration => timeline
+            ? Children(timeline).Aggregate(0.0f, (current, child) => Mathf.Max(current, child.FullDuration))
+            : 1;
 
         int IDOTweenAnimation.Loops => 0;
         bool IDOTweenAnimation.IsValid => timeline != null;
-        bool IDOTweenAnimation.IsActive => timeline && timeline.isActiveAndEnabled;
+        bool IDOTweenAnimation.IsActive => timeline == null || timeline.isActiveAndEnabled;
         bool IDOTweenAnimation.IsFrom => false;
         Component IDOTweenAnimation.Component => this;
 
@@ -57,7 +58,7 @@ namespace Dott
             {
                 if (timeline == null)
                 {
-                    return "Invalid timeline";
+                    return "↪ None";
                 }
 
                 if (!string.IsNullOrEmpty(id))
@@ -96,6 +97,7 @@ namespace Dott
             float Duration { get; }
             int Loops { get; }
             float Delay { get; }
+            bool IsActiveAndValid { get; }
             float FullDuration => Delay + Duration * Mathf.Max(1, Loops);
             [CanBeNull] Tween CreateEditorPreview();
             IEnumerable<Object> Targets { get; }
@@ -108,19 +110,21 @@ namespace Dott
             public float Duration => child.Duration;
             public int Loops => child.Loops;
             public float Delay => child.Delay;
+            public bool IsActiveAndValid => child.IsActive && child.IsValid;
             public Tween CreateEditorPreview() => child.CreateEditorPreview();
             public IEnumerable<Object> Targets => child.Targets;
         }
 
         private readonly struct DOChild : IChild
         {
-            private readonly DOTweenAnimation doChild;
-            public DOChild(DOTweenAnimation doChild) => this.doChild = doChild;
-            public float Duration => doChild.duration;
-            public int Loops => doChild.loops;
-            public float Delay => doChild.delay;
-            public Tween CreateEditorPreview() => doChild.CreateEditorPreview();
-            public IEnumerable<Object> Targets => new[] { doChild.target };
+            private readonly DOTweenAnimation child;
+            public DOChild(DOTweenAnimation child) => this.child = child;
+            public float Duration => child.duration;
+            public int Loops => child.loops;
+            public float Delay => child.delay;
+            public bool IsActiveAndValid => child.isActive && child.isValid;
+            public Tween CreateEditorPreview() => child.CreateEditorPreview();
+            public IEnumerable<Object> Targets => new[] { child.target };
         }
     }
 }
