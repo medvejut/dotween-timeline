@@ -86,7 +86,7 @@ Perfect for setting position, rotation, color, and more, without animation.
 
 #### DOTweenLink component
 A reference to another Timeline. Useful for complex animations with a large number of child tweens.\
-See the GameObject `[ Wow! Timeline ]` in the Sample scene.
+See the Sample scene for usage details.
 
 <img width="343" height="156" alt="image" src="https://github.com/user-attachments/assets/114cc9bc-8d4b-4373-a896-fa94f5c45023" />
 
