@@ -6,7 +6,6 @@ namespace Dott.Sample
     public class TimelineTest : MonoBehaviour
     {
         [SerializeField] private DOTweenTimeline timeline;
-        [SerializeField] private DOTweenTimeline wowTimeline;
         [SerializeField] private DOTweenCallback callback;
 
         private void Start()
@@ -16,7 +15,6 @@ namespace Dott.Sample
             callback.onCallback.AddListener(() =>
             {
                 Debug.Log("Callback triggered!");
-                wowTimeline.Restart();
             });
         }
 
