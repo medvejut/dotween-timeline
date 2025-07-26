@@ -110,7 +110,8 @@ namespace Dott.Editor
             }
 
             Component component;
-            if (components.Length == 1)
+            var showPopupForSingleComponent = propertyType == DOTweenFrame.FrameProperty.PropertyType.Enabled;
+            if (components.Length == 1 && !showPopupForSingleComponent)
             {
                 targetProperty.objectReferenceValue = component = components[0];
                 return component;
@@ -165,6 +166,11 @@ namespace Dott.Editor
                     EditorGUILayout.PropertyField(colorProperty, new GUIContent("Color"));
                     break;
 
+                case DOTweenFrame.FrameProperty.PropertyType.Active:
+                case DOTweenFrame.FrameProperty.PropertyType.Enabled:
+                    EditorGUILayout.PropertyField(current.OptionalBoolProp, new GUIContent("Active"));
+                    break;
+
                 case DOTweenFrame.FrameProperty.PropertyType.None:
                     break;
 
@@ -190,6 +196,8 @@ namespace Dott.Editor
                 case DOTweenFrame.FrameProperty.PropertyType.None:
                 case DOTweenFrame.FrameProperty.PropertyType.Fade:
                 case DOTweenFrame.FrameProperty.PropertyType.Color:
+                case DOTweenFrame.FrameProperty.PropertyType.Active:
+                case DOTweenFrame.FrameProperty.PropertyType.Enabled:
                     break;
 
                 default:
@@ -245,6 +253,7 @@ namespace Dott.Editor
                 case DOTweenFrame.FrameProperty.PropertyType.Position:
                 case DOTweenFrame.FrameProperty.PropertyType.LocalPosition:
                 case DOTweenFrame.FrameProperty.PropertyType.Scale:
+                case DOTweenFrame.FrameProperty.PropertyType.Active:
                     return new Component[] { targetGameObject.GetComponent<Transform>() };
 
                 case DOTweenFrame.FrameProperty.PropertyType.Fade:
@@ -260,6 +269,9 @@ namespace Dott.Editor
                     var camera = targetGameObject.GetComponent<Camera>();
                     return new Component[] { graphic, camera }.Where(c => c != null).ToArray();
                 }
+
+                case DOTweenFrame.FrameProperty.PropertyType.Enabled:
+                    return targetGameObject.GetComponents<Behaviour>().Cast<Component>().ToArray();
 
                 case DOTweenFrame.FrameProperty.PropertyType.None:
                 default:

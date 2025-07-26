@@ -12,9 +12,9 @@ namespace Dott.Editor
         private const float ROW_HEIGHT = 20;
         private const int BOTTOM_HEIGHT = 30;
         private const int TIME_HEIGHT = 20;
-        private const int HEADER_HEIGHT = 28;
         private static readonly Vector2 PlayButtonSize = new(44, 24);
         private static readonly Vector2 LoopToggleSize = new(24, 24);
+        private static readonly Color ToggleFadeColor = new(1f, 1f, 1f, 0.7f);
         private static readonly Color PlayheadColor = new(0.19f, 0.44f, 0.89f);
 
         private static readonly Color[] Colors =
@@ -25,7 +25,7 @@ namespace Dott.Editor
 
         public static Rect GetTimelineControlRect(int tweenCount)
         {
-            return EditorGUILayout.GetControlRect(false, HEADER_HEIGHT + TIME_HEIGHT + tweenCount * ROW_HEIGHT + BOTTOM_HEIGHT);
+            return EditorGUILayout.GetControlRect(false, TIMELINE_HEADER_HEIGHT + TIME_HEIGHT + tweenCount * ROW_HEIGHT + BOTTOM_HEIGHT);
         }
 
         public static void Background(Rect rect)
@@ -36,11 +36,9 @@ namespace Dott.Editor
 
         public static Rect Header(Rect rect)
         {
-            rect = rect.SetHeight(HEADER_HEIGHT);
+            rect = rect.SetHeight(TIMELINE_HEADER_HEIGHT);
 
-            var style = EditorStyles.boldLabel;
-            style.alignment = TextAnchor.MiddleCenter;
-            GUI.Label(rect, "Timeline", style);
+            GUI.Label(rect, "Timeline", TimelineHeaderStyle);
 
             var bottomLine = new Rect(rect.x, rect.y + rect.height, rect.width, 1);
             EditorGUI.DrawRect(bottomLine, Color.black);
@@ -82,7 +80,7 @@ namespace Dott.Editor
 
         public static Rect Time(Rect rect, float timeScale, ref bool isDragging, Action start, Action<Event> end)
         {
-            rect = rect.ShiftY(HEADER_HEIGHT).SetHeight(TIME_HEIGHT);
+            rect = rect.ShiftY(TIMELINE_HEADER_HEIGHT).SetHeight(TIME_HEIGHT);
 
             var style = new GUIStyle(GUI.skin.label)
             {
@@ -162,7 +160,7 @@ namespace Dott.Editor
 
         public static Rect Tweens(Rect rect, IDOTweenAnimation[] animations, float timeScale, [CanBeNull] IDOTweenAnimation selected, ref bool isTweenDragging, Action<IDOTweenAnimation> tweenSelected)
         {
-            rect = rect.ShiftY(HEADER_HEIGHT + TIME_HEIGHT).SetHeight(animations.Length * ROW_HEIGHT);
+            rect = rect.ShiftY(TIMELINE_HEADER_HEIGHT + TIME_HEIGHT).SetHeight(animations.Length * ROW_HEIGHT);
 
             IDOTweenAnimation startDrag = null;
 
@@ -274,6 +272,7 @@ namespace Dott.Editor
             var width = isInfinite
                 ? rowRect.width - start + rowRect.x
                 : animation.Duration * loops * timeScale * rowRect.width;
+            width = Mathf.Max(width, MIN_TWEEN_RECT_WIDTH);
 
             var tweenRect = new Rect(start, rowRect.y, width, rowRect.height).Expand(-1);
             var alphaMultiplier = animation.IsActive ? 1f : 0.4f;
@@ -334,26 +333,40 @@ namespace Dott.Editor
             EditorGUI.DrawRect(verticalLine, PlayheadColor);
         }
 
-        public static void Inspector(UnityEditor.Editor editor)
+        public static void Inspector(UnityEditor.Editor editor, Action onButtonUp, Action onButtonDown)
         {
-            var headerStyle = new GUIStyle(EditorStyles.boldLabel)
-            {
-                alignment = TextAnchor.MiddleLeft
-            };
-
             EditorGUILayout.Space();
 
             Splitter(new Color(0.12f, 0.12f, 0.12f, 1.333f));
 
-            var backgroundRect = GUILayoutUtility.GetRect(1f, EditorGUIUtility.singleLineHeight);
+            var backgroundRect = GUILayoutUtility.GetRect(1f, 20f);
             var labelRect = backgroundRect;
             backgroundRect = ToFullWidth(backgroundRect);
             EditorGUI.DrawRect(backgroundRect, new Color(0.1f, 0.1f, 0.1f, 0.2f));
-            EditorGUI.LabelField(labelRect, "Inspector", headerStyle);
+            EditorGUI.LabelField(labelRect, "Inspector", InspectorHeaderStyle);
+
+            CreateInspectorButtons(backgroundRect, onButtonUp, onButtonDown);
 
             Splitter(new Color(0.19f, 0.19f, 0.19f, 1.333f));
 
             editor.OnInspectorGUI();
+        }
+
+        private static void CreateInspectorButtons(Rect backgroundRect, Action onButtonUp, Action onButtonDown)
+        {
+            const int rightMargin = 6;
+            var downButtonRect = new Rect(backgroundRect.xMax - InspectorButtonSize.x - rightMargin, backgroundRect.y, InspectorButtonSize.x, InspectorButtonSize.y);
+            var upButtonRect = downButtonRect.ShiftX(-InspectorButtonSize.x);
+
+            if (GUI.Button(upButtonRect, InspectorUpButton, InspectorButtonStyle))
+            {
+                onButtonUp?.Invoke();
+            }
+
+            if (GUI.Button(downButtonRect, InspectorDownButton, InspectorButtonStyle))
+            {
+                onButtonDown?.Invoke();
+            }
         }
 
         private static void Splitter(Color color)
@@ -375,8 +388,7 @@ namespace Dott.Editor
             var buttonRect = CalculateAddButtonRect(timelineRect);
             var image = Resources.Load<Texture>("dotween.timeline.add.tween");
             var content = new GUIContent(image) { tooltip = "Add tween" };
-            var style = new GUIStyle(EditorStyles.miniButtonLeft) { fixedHeight = 0 };
-            return GUI.Button(buttonRect, content, style);
+            return GUI.Button(buttonRect, content, AddTweenButtonStyle);
         }
 
         private static Rect CalculateAddButtonRect(Rect timelineRect)
@@ -393,10 +405,9 @@ namespace Dott.Editor
             var buttonRect = addButtonRect.ShiftX(addButtonRect.width).SetWidth(buttonWidth);
             var dropDrownIcon = EditorGUIUtility.IconContent("icon dropdown");
 
-            var style = new GUIStyle(EditorStyles.miniButtonRight) { fixedHeight = 0 };
             var backgroundColor = GUI.backgroundColor;
             GUI.backgroundColor = backgroundColor.SetAlpha(0.55f);
-            var result = EditorGUI.DropdownButton(buttonRect, dropDrownIcon, FocusType.Passive, style);
+            var result = EditorGUI.DropdownButton(buttonRect, dropDrownIcon, FocusType.Passive, AddMoreButtonStyle);
             GUI.backgroundColor = backgroundColor;
 
             if (!result)
@@ -434,7 +445,7 @@ namespace Dott.Editor
         public static bool PlayButton(Rect rect)
         {
             var content = EditorGUIUtility.IconContent("d_PlayButton");
-            var position = rect.position + new Vector2(2, (HEADER_HEIGHT - PlayButtonSize.y) / 2);
+            var position = rect.position + new Vector2(2, (TIMELINE_HEADER_HEIGHT - PlayButtonSize.y) / 2);
             var buttonRect = new Rect(position, PlayButtonSize);
             var contentColor = GUI.contentColor;
             GUI.contentColor = Color.cyan;
@@ -445,17 +456,28 @@ namespace Dott.Editor
 
         public static bool StopButton(Rect rect)
         {
-            var position = rect.position + new Vector2(2, (HEADER_HEIGHT - PlayButtonSize.y) / 2);
+            var position = rect.position + new Vector2(2, (TIMELINE_HEADER_HEIGHT - PlayButtonSize.y) / 2);
             var buttonRect = new Rect(position, PlayButtonSize);
             return GUI.Button(buttonRect, "■");
         }
 
         public static bool LoopToggle(Rect rect, bool value)
         {
-            var position = rect.position + new Vector2(rect.width - LoopToggleSize.x - 2, (HEADER_HEIGHT - LoopToggleSize.y) / 2);
+            var position = rect.position + new Vector2(rect.width - LoopToggleSize.x - 2, (TIMELINE_HEADER_HEIGHT - LoopToggleSize.y) / 2);
             var toggleRect = new Rect(position, LoopToggleSize);
             var iconContent = EditorGUIUtility.TrIconContent("preAudioLoopOff", "Toggle loop playback");
             var style = new GUIStyle(GUI.skin.button) { padding = new RectOffset(0, 0, 0, 0) };
+            using var colorScope = new DeGUI.ColorScope(ToggleFadeColor, ToggleFadeColor);
+            return GUI.Toggle(toggleRect, value, iconContent, style);
+        }
+
+        public static bool SnapToggle(Rect rect, bool value)
+        {
+            var position = rect.position + new Vector2(rect.width - (LoopToggleSize.x + 1) * 2 - 2, (TIMELINE_HEADER_HEIGHT - LoopToggleSize.y) / 2);
+            var toggleRect = new Rect(position, LoopToggleSize);
+            var iconContent = EditorGUIUtility.TrIconContent("SceneViewSnap", $"Toggle snapping while dragging tweens\n\nHold <b>Ctrl</b> to temporarily {(value ? "disable" : "enable")} snapping.");
+            var style = new GUIStyle(GUI.skin.button) { padding = new RectOffset(0, 0, 0, 0) };
+            using var colorScope = new DeGUI.ColorScope(ToggleFadeColor, ToggleFadeColor);
             return GUI.Toggle(toggleRect, value, iconContent, style);
         }
 
@@ -471,6 +493,31 @@ namespace Dott.Editor
 
         private const string ICON_CALLBACK =
             "iVBORw0KGgoAAAANSUhEUgAAABQAAAAoCAYAAAD+MdrbAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAD4SURBVHgB7ZWxCoJQFIaPkkuOQVtDLQ02tPQGDrn6CvU+tbeH4NTmCzgLRWM0NGhBuCiBBXZO3eISFXppMLgf/ChX7ufPWQ6ApHIo3HsX08ZoUI4zZodZ84c9x3GmWZYleUmSJNnTXVboiUUfckGoCDqGJFKZsKbrehME0TRNBzYqFX6MFEqhFErhnwsvcRxvQZA0TQ/4OPFnHdu2RyJrAIts8O4YXnYK0cKYvu/Pi4hoj3ieN8M7Fty35VvqmD61jaJo+UkWhuGKtRpAwbV7a+u67oQfA9fKxDSgJPRng9oGQbCgsFYGfGmlFBDTGB4zijBHkEgqzhX38zVoGGkfagAAAABJRU5ErkJggg==";
+
+        #endregion
+
+        #region Styles
+
+        private static readonly GUIStyle InspectorHeaderStyle = new(EditorStyles.boldLabel)
+            { alignment = TextAnchor.MiddleLeft };
+        private static readonly Vector2 InspectorButtonSize = new(24f, 20f);
+        private static readonly GUIContent InspectorDownButton = EditorGUIUtility.TrTextContent("↓", "Move Down");
+        private static readonly GUIContent InspectorUpButton = EditorGUIUtility.TrTextContent("↑", "Move Up");
+        private static readonly GUIStyle InspectorButtonStyle = new(EditorStyles.iconButton)
+        {
+            alignment = TextAnchor.MiddleCenter,
+            normal = { textColor = new Color(0.6f, 0.6f, 0.6f) },
+            fixedWidth = 0, fixedHeight = 0
+        };
+
+        private static readonly GUIStyle TimelineHeaderStyle = new(EditorStyles.boldLabel)
+            { alignment = TextAnchor.MiddleCenter };
+        private const int TIMELINE_HEADER_HEIGHT = 28;
+
+        private static readonly GUIStyle AddTweenButtonStyle = new(EditorStyles.miniButtonLeft) { fixedHeight = 0 };
+        private static readonly GUIStyle AddMoreButtonStyle = new(EditorStyles.miniButtonRight) { fixedHeight = 0 };
+
+        private const float MIN_TWEEN_RECT_WIDTH = 16f;
 
         #endregion
     }

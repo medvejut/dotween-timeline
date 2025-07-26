@@ -39,11 +39,15 @@ namespace Dott
                 switch (component)
                 {
                     case DOTweenAnimation animation:
+                        if (!animation.isValid || !animation.isActive) continue;
+
                         animation.CreateTween(regenerateIfExists: true);
                         Sequence.Insert(0, animation.tween);
                         break;
 
                     case IDOTweenAnimation animation:
+                        if (!animation.IsValid || !animation.IsActive) continue;
+
                         var tween = animation.CreateTween(regenerateIfExists: true);
                         Sequence.Insert(0, tween);
                         break;

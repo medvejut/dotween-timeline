@@ -22,6 +22,8 @@ namespace Dott
                 FrameProperty.PropertyType.Scale => new ScaleScope(property),
                 FrameProperty.PropertyType.Fade => new FadeScope(property),
                 FrameProperty.PropertyType.Color => new ColorScope(property),
+                FrameProperty.PropertyType.Active => new ActiveScope(property),
+                FrameProperty.PropertyType.Enabled => new EnabledScope(property),
 
                 _ => throw new System.NotImplementedException()
             };
@@ -202,6 +204,44 @@ namespace Dott
                     default:
                         throw new System.NotImplementedException();
                 }
+            }
+        }
+
+        private class ActiveScope : PropertyScope
+        {
+            private GameObject Target => Property.TargetGameObject;
+            private bool startValue;
+
+            public ActiveScope(FrameProperty property) : base(property) { }
+
+            public override void Open()
+            {
+                startValue = Property.TargetGameObject.activeSelf;
+                Target.SetActive(Property.OptionalBool);
+            }
+
+            public override void Close()
+            {
+                Target.SetActive(startValue);
+            }
+        }
+
+        private class EnabledScope : PropertyScope
+        {
+            private Behaviour Target => (Behaviour)Property.Target;
+            private bool startValue;
+
+            public EnabledScope(FrameProperty property) : base(property) { }
+
+            public override void Open()
+            {
+                startValue = Target.enabled;
+                Target.enabled = Property.OptionalBool;
+            }
+
+            public override void Close()
+            {
+                Target.enabled = startValue;
             }
         }
     }
