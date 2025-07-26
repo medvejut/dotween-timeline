@@ -82,6 +82,9 @@ namespace Dott.Editor
 
         private void DottEditorPreviewOnCompleted()
         {
+            // Hotfix to prevent exception when two Inspector tabs with a Timeline component are open
+            if (currentPlayAnimations == null) { return; }
+
             if (!Loop)
             {
                 Stop();
