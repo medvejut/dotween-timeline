@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using DG.Tweening;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace Dott.Editor
@@ -52,6 +53,8 @@ namespace Dott.Editor
             selection = new DottSelection();
             view = new DottView();
 
+            view.IsSnapping = EditorPrefs.GetBool("Dott.Snap", true);
+
             view.TweenSelected += OnTweenSelected;
             view.TweenDrag += DragSelectedAnimation;
 
@@ -67,6 +70,10 @@ namespace Dott.Editor
             view.PlayClicked += Play;
             view.StopClicked += controller.Stop;
             view.LoopToggled += ToggleLoop;
+            view.SnapToggled += ToggleSnap;
+
+            view.InspectorUpButtonClicked += MoveSelectedUp;
+            view.InspectorDownButtonClicked += MoveSelectedDown;
 
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
@@ -88,6 +95,10 @@ namespace Dott.Editor
             view.PlayClicked -= Play;
             view.StopClicked -= controller.Stop;
             view.LoopToggled -= ToggleLoop;
+            view.SnapToggled -= ToggleSnap;
+
+            view.InspectorUpButtonClicked -= MoveSelectedUp;
+            view.InspectorDownButtonClicked -= MoveSelectedDown;
 
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
@@ -133,11 +144,54 @@ namespace Dott.Editor
 
             var delay = time - dragTweenTimeShift.Value;
             delay = Mathf.Max(0, delay);
+            delay = TrySnapTime(selection.Animation, delay, view.TimeScale);
             delay = (float)Math.Round(delay, 2);
             selection.Animation.Delay = delay;
 
             // Complete undo record
             Undo.FlushUndoRecordObjects();
+        }
+
+        private float TrySnapTime(IDOTweenAnimation target, float newDelay, float timeScale)
+        {
+            if (!IsSnapActive() || animations.Length < 2)
+            {
+                return newDelay;
+            }
+
+            var snapThreshold = 1f / 40f / timeScale;
+            var snapPoints = animations
+                .Where(animation => animation.Component != target.Component)
+                .SelectMany(animation => Enumerable.Empty<float>().Append(animation.Delay).Append(animation.Delay + animation.Duration * Mathf.Max(1, animation.Loops)))
+                .Distinct().ToArray();
+
+            var snapTime = snapPoints.OrderBy(snapPoint => Mathf.Abs(snapPoint - newDelay)).First();
+            if (Math.Abs(snapTime - newDelay) < snapThreshold)
+            {
+                return snapTime;
+            }
+
+            if (target.Loops == -1)
+            {
+                return newDelay;
+            }
+
+            var targetFullDuration = target.Duration * Mathf.Max(1, target.Loops);
+            var newEndTime = newDelay + targetFullDuration;
+            var snapEndTime = snapPoints.OrderBy(snapPoint => Mathf.Abs(snapPoint - newEndTime)).First();
+            if (Math.Abs(snapEndTime - newEndTime) < snapThreshold)
+            {
+                return snapEndTime - targetFullDuration;
+            }
+
+            return newDelay;
+        }
+
+        private bool IsSnapActive()
+        {
+            var reverseSnap = Event.current.control;
+            var snapEnabled = view.IsSnapping;
+            return reverseSnap ? !snapEnabled : snapEnabled;
         }
 
         private void OnTweenSelected(IDOTweenAnimation animation)
@@ -194,7 +248,7 @@ namespace Dott.Editor
             var index = Array.IndexOf(components, dest);
             while (index > targetIndex)
             {
-                UnityEditorInternal.ComponentUtility.MoveComponentUp(dest);
+                ComponentUtility.MoveComponentUp(dest);
                 index--;
             }
         }
@@ -202,6 +256,29 @@ namespace Dott.Editor
         private void ToggleLoop(bool value)
         {
             controller.Loop = value;
+        }
+
+        private void ToggleSnap()
+        {
+            EditorPrefs.SetBool("Dott.Snap", view.IsSnapping);
+        }
+
+        private void MoveSelectedUp()
+        {
+            var index = animations.FindIndex(animation => animation.Component == selection.Animation.Component);
+            if (index > 0)
+            {
+                ComponentUtility.MoveComponentUp(selection.Animation.Component);
+            }
+        }
+
+        private void MoveSelectedDown()
+        {
+            var index = animations.FindIndex(animation => animation.Component == selection.Animation.Component);
+            if (index < animations.Length - 1)
+            {
+                ComponentUtility.MoveComponentDown(selection.Animation.Component);
+            }
         }
 
         private void OnPlayModeStateChanged(PlayModeStateChange stateChange)

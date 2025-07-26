@@ -13,7 +13,8 @@ namespace Dott
                 None,
                 Position, LocalPosition,
                 Scale,
-                Fade, Color
+                Fade, Color,
+                Active, Enabled
             }
 
             public GameObject TargetGameObject;

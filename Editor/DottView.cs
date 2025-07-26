@@ -13,8 +13,10 @@ namespace Dott.Editor
         private bool isTweenDragging;
         private static readonly AddMoreItem[] AddMoreItems = CreateAddMoreItems();
 
+        public float TimeScale { get; private set; }
         public bool IsTimeDragging => isTimeDragging;
         public bool IsTweenDragging => isTweenDragging;
+        public bool IsSnapping { get; set; }
 
         public event Action<Event> TimeDragEnd;
         public event Action<float> TimeDrag;
@@ -27,7 +29,10 @@ namespace Dott.Editor
         public event Action StopClicked;
         public event Action PlayClicked;
         public event Action<bool> LoopToggled;
+        public event Action SnapToggled;
         public event Action PreviewDisabled;
+        public event Action InspectorUpButtonClicked;
+        public event Action InspectorDownButtonClicked;
 
         public void DrawTimeline(IDOTweenAnimation[] animations, [CanBeNull] IDOTweenAnimation selected, bool isPlaying, float currentPlayingTime, bool isLooping, bool isPaused)
         {
@@ -36,10 +41,10 @@ namespace Dott.Editor
             DottGUI.Background(rect);
             var headerRect = DottGUI.Header(rect);
 
-            var timeScale = CalculateTimeScale(animations);
+            TimeScale = CalculateTimeScale(animations);
             var timeDragStarted = false;
-            var timeRect = DottGUI.Time(rect, timeScale, ref isTimeDragging, () => timeDragStarted = true, TimeDragEnd);
-            var tweensRect = DottGUI.Tweens(rect, animations, timeScale, selected, ref isTweenDragging, TweenSelected);
+            var timeRect = DottGUI.Time(rect, TimeScale, ref isTimeDragging, () => timeDragStarted = true, TimeDragEnd);
+            var tweensRect = DottGUI.Tweens(rect, animations, TimeScale, selected, ref isTweenDragging, TweenSelected);
 
             if (DottGUI.AddButton(rect))
             {
@@ -60,7 +65,7 @@ namespace Dott.Editor
 
             if (isPlaying || isPaused)
             {
-                var scaledTime = currentPlayingTime * timeScale;
+                var scaledTime = currentPlayingTime * TimeScale;
                 var verticalRect = timeRect.Add(tweensRect);
                 DottGUI.TimeVerticalLine(verticalRect, scaledTime, isPaused);
 
@@ -73,7 +78,7 @@ namespace Dott.Editor
             if (isTimeDragging)
             {
                 var scaledTime = DottGUI.GetScaledTimeUnderMouse(timeRect);
-                var rawTime = scaledTime / timeScale;
+                var rawTime = scaledTime / TimeScale;
                 DottGUI.TimeVerticalLine(timeRect.Add(tweensRect), scaledTime, underLabel: true);
                 DottGUI.PlayheadLabel(timeRect, scaledTime, rawTime);
 
@@ -89,7 +94,8 @@ namespace Dott.Editor
 
                 if (Event.current.type == EventType.MouseDrag)
                 {
-                    TweenDrag?.Invoke(time / timeScale);
+                    var rawTime = time / TimeScale;
+                    TweenDrag?.Invoke(rawTime);
                 }
             }
 
@@ -101,6 +107,13 @@ namespace Dott.Editor
                 case false when DottGUI.PlayButton(rect):
                     PlayClicked?.Invoke();
                     break;
+            }
+
+            var snapToggle = DottGUI.SnapToggle(rect, IsSnapping);
+            if (snapToggle != IsSnapping)
+            {
+                IsSnapping = snapToggle;
+                SnapToggled?.Invoke();
             }
 
             var loopResult = DottGUI.LoopToggle(rect, isLooping);
@@ -126,7 +139,7 @@ namespace Dott.Editor
 
         public void DrawInspector(UnityEditor.Editor editor)
         {
-            DottGUI.Inspector(editor);
+            DottGUI.Inspector(editor, InspectorUpButtonClicked, InspectorDownButtonClicked);
         }
 
         private static float CalculateTimeScale(IDOTweenAnimation[] animations)

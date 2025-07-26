@@ -84,6 +84,12 @@ Perfect for setting position, rotation, color, and more, without animation.
 
 <img width="490" src="https://github.com/user-attachments/assets/df9226e8-dc83-419b-b1ca-daaf6b70811a" />
 
+#### DOTweenLink component
+A reference to another Timeline. Useful for complex animations with a large number of child tweens.\
+See the Sample scene for usage details.
+
+<img width="343" height="156" alt="image" src="https://github.com/user-attachments/assets/114cc9bc-8d4b-4373-a896-fa94f5c45023" />
+
 ## Contributing
 Please report bugs in [Issues](https://github.com/medvejut/dotween-timeline/issues).\
 Feel free to ask questions and share thoughts in [Discussions](https://github.com/medvejut/dotween-timeline/discussions).
