@@ -271,7 +271,11 @@ namespace Dott.Editor
                 }
 
                 case DOTweenFrame.FrameProperty.PropertyType.Enabled:
-                    return targetGameObject.GetComponents<Behaviour>().Cast<Component>().ToArray();
+                {
+                    var behaviour = targetGameObject.GetComponent<Behaviour>();
+                    var renderer = targetGameObject.GetComponent<Renderer>();
+                    return new Component[] { behaviour, renderer }.Where(c => c != null).ToArray();
+                }
 
                 case DOTweenFrame.FrameProperty.PropertyType.None:
                 default:

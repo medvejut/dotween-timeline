@@ -228,20 +228,38 @@ namespace Dott
 
         private class EnabledScope : PropertyScope
         {
-            private Behaviour Target => (Behaviour)Property.Target;
             private bool startValue;
 
             public EnabledScope(FrameProperty property) : base(property) { }
 
             public override void Open()
             {
-                startValue = Target.enabled;
-                Target.enabled = Property.OptionalBool;
+                var endValue = Property.OptionalBool;
+                Apply(endValue, out startValue);
             }
 
             public override void Close()
             {
-                Target.enabled = startValue;
+                Apply(startValue, out _);
+            }
+
+            private void Apply(bool value, out bool previousValue)
+            {
+                switch (Property.Target)
+                {
+                    case Behaviour behaviour:
+                        previousValue = behaviour.enabled;
+                        behaviour.enabled = value;
+                        break;
+
+                    case Renderer renderer:
+                        previousValue = renderer.enabled;
+                        renderer.enabled = value;
+                        break;
+
+                    default:
+                        throw new System.NotImplementedException();
+                }
             }
         }
     }
