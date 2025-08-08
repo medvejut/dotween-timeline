@@ -45,6 +45,8 @@ namespace Dott.Editor
             {
                 Repaint();
             }
+			
+            Timeline.isIndependentUpdate = EditorGUILayout.Toggle( "Ignore TimeScale", Timeline.isIndependentUpdate );
         }
 
         private void OnEnable()

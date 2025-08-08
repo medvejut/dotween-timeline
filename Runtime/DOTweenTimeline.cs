@@ -8,6 +8,9 @@ namespace Dott
     public class DOTweenTimeline : MonoBehaviour
     {
         [CanBeNull] public Sequence Sequence { get; private set; }
+		
+        //  If TRUE the sequence will ignore Unity's Time.timeScale
+        public bool isIndependentUpdate;
 
         // Do not override the onKill callback because it is used internally to reset the Sequence
         public Sequence Play()
@@ -53,6 +56,7 @@ namespace Dott
                         break;
                 }
             }
+            Sequence.SetUpdate( isIndependentUpdate );
         }
 
         private void OnDestroy()
